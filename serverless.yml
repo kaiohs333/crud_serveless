@@ -1,0 +1,50 @@
+service: crud-serveless
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1 # You can change this to your desired region
+  # Add IAM permissions later
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/ItemsTable"
+        - Effect: Allow
+          Action:
+            - sns:Publish
+          Resource: { "Fn::GetAtt": ["CrudEventsTopic", "TopicArn"] }
+
+functions:
+  hello:
+    handler: handler.hello
+    events:
+      - httpApi:
+          path: /hello
+          method: get
+
+resources:
+  Resources:
+    ItemsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ItemsTable
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+    CrudEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: crud-events-topic

@@ -1,0 +1,21 @@
+{
+  "name": "crud_serveless",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaiohs333/crud_serveless.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kaiohs333/crud_serveless/issues"
+  },
+  "homepage": "https://github.com/kaiohs333/crud_serveless#readme"
+}
