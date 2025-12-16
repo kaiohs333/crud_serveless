@@ -1,0 +1,120 @@
+service: crud-serverless
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'local'}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+            - "sns:*"
+            - "s3:*"
+            - "logs:*"
+            - "cloudformation:*"
+          Resource: "*"
+
+plugins:
+  - serverless-localstack
+
+custom:
+  localstack:
+    stages:
+      - local
+    host: http://localhost
+    edgePort: 4566
+    autostart: false
+
+
+
+functions:
+  # CREATE - Criar novo item + notificação SNS
+  createItem:
+    handler: functions/createItem.handler
+    events:
+      - http:
+          path: items
+          method: post
+          cors: true
+
+  # READ ALL - Listar todos os items
+  listItems:
+    handler: functions/listItems.handler
+    events:
+      - http:
+          path: items
+          method: get
+          cors: true
+
+  # READ ONE - Buscar item por ID
+  getItem:
+    handler: functions/getItem.handler
+    events:
+      - http:
+          path: items/{id}
+          method: get
+          cors: true
+
+  # UPDATE - Atualizar item existente + notificação SNS
+  updateItem:
+    handler: functions/updateItem.handler
+    events:
+      - http:
+          path: items/{id}
+          method: put
+          cors: true
+
+  # DELETE - Remover item
+  deleteItem:
+    handler: functions/deleteItem.handler
+    events:
+      - http:
+          path: items/{id}
+          method: delete
+          cors: true
+
+  # SUBSCRIBER - Processar notificações SNS
+  snsSubscriber:
+    handler: functions/snsSubscriber.handler
+    events:
+      - sns:
+          arn:
+            Ref: ItemsTopic
+          topicName: items-topic-${self:provider.stage}
+
+  # UPLOAD PHOTO - Fazer upload de fotos para S3
+  uploadPhoto:
+    handler: functions/uploadPhoto.handler
+    events:
+      - http:
+          path: photos/upload
+          method: post
+          cors: true
+
+
+resources:
+  Resources:
+    # Tabela DynamoDB
+    ItemsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    # Tópico SNS
+    ItemsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: items-topic-${self:provider.stage}
+        DisplayName: "Notificações de Items"
